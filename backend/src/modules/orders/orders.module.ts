@@ -9,5 +9,6 @@ import { OrdersService } from './orders.service';
   imports: [MikroOrmModule.forFeature([Order, Product])],
   providers: [OrdersService],
   controllers: [OrdersController],
+  exports:[OrdersService]
 })
 export class OrdersModule {}
