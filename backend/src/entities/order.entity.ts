@@ -11,6 +11,7 @@ export enum OrderStatus {
     PENDING = 'pendente',
     PREPARING = 'preparando',
     READY = 'pronto',
+    COMPLETED = 'concluido',
 }
 
 @Entity()

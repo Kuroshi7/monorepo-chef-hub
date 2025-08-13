@@ -8,16 +8,25 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  /**
+   * Registra um novo usuario.
+   */
   @Post('register')
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto.name, dto.email, dto.password);
   }
 
+  /**
+   * login de usuario.
+   */
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto.email, dto.password);
   }
 
+  /**
+   *  logout do usuario.
+   */
   @UseGuards(JwtAuthGuard)
   @Post('logout')
   async logout() {

@@ -58,6 +58,11 @@ export class OrdersService {
         return order;
     }
 
+    async delete(id: number): Promise<void> {
+        const order = await this.findOne(id);
+        await this.em.removeAndFlush(order);
+    }
+
   
   async getDailyMetrics(): Promise<{ revenue: number; orderCount: number; averageTicket: number }> {
     const today = new Date();

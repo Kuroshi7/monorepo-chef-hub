@@ -8,6 +8,9 @@ import { OrdersService } from "../orders/orders.service";
 export class DashboardController{
     constructor(private readonly orderService: OrdersService){}
 
+    /**
+     * Retorna as metricas para dashboard.
+     */
     @Get('metrics')
     async getDashboardMetrics(){
         return this.orderService.getDailyMetrics();

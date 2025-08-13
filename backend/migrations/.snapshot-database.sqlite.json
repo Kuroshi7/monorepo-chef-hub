@@ -51,7 +51,8 @@
           "enumItems": [
             "pendente",
             "preparando",
-            "pronto"
+            "pronto",
+            "concluido"
           ],
           "mappedType": "enum"
         },

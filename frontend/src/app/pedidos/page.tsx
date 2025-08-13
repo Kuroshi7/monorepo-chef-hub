@@ -43,7 +43,9 @@ export default function PedidosPage() {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
-      .then((data) => setPedidos(data))
+      .then((data: Pedido[]) =>
+        setPedidos(data.filter((pedido) => pedido.status !== "concluido"))
+      )
       .finally(() => setLoading(false));
   }, []);
 
@@ -73,11 +75,38 @@ export default function PedidosPage() {
         headers: { Authorization: `Bearer ${token}` },
       })
         .then((res) => res.json())
-        .then((data) => setPedidos(data))
+        .then((data: Pedido[]) =>
+          setPedidos(data.filter((pedido) => pedido.status !== "concluido"))
+        )
         .finally(() => setLoading(false));
       reset();
     } catch {
       setStatusMsg("Falha ao atualizar status.");
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm(`Tem certeza que deseja cancelar o pedido #${id}?`)) {
+      return;
+    }
+
+    setStatusMsg(null);
+    const token = localStorage.getItem("jwt");
+
+    try {
+      const res = await fetch(`http://localhost:3001/orders/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("Erro ao cancelar o pedido");
+
+      setStatusMsg("Pedido cancelado com sucesso!");
+      setPedidos((prevPedidos) => prevPedidos.filter((p) => p.id !== id));
+    } catch {
+      setStatusMsg("Falha ao cancelar o pedido.");
     }
   };
 
@@ -92,7 +121,7 @@ export default function PedidosPage() {
             <thead className="bg-gray-100 sticky top-0 z-10">
               <tr>
                 <th className="px-6 py-4 text-left text-gray-700 font-semibold border-b">
-                  ID
+                  Senha
                 </th>
                 <th className="px-6 py-4 text-left text-gray-700 font-semibold border-b">
                   Produtos
@@ -105,6 +134,9 @@ export default function PedidosPage() {
                 </th>
                 <th className="px-6 py-4 text-left text-gray-700 font-semibold border-b">
                   Pagamento
+                </th>
+                <th className="px-6 py-4 text-left text-gray-700 font-semibold border-b">
+                  Ações
                 </th>
               </tr>
             </thead>
@@ -133,14 +165,17 @@ export default function PedidosPage() {
                   <td className="px-6 py-4 text-gray-800 align-middle">
                     <span
                       className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                        pedido.status === "Pendente"
+                        pedido.status === "pendente"
                           ? "bg-yellow-100 text-yellow-800"
-                          : pedido.status === "Concluído"
-                          ? "bg-green-100 text-green-800"
+                          : pedido.status === "preparando"
+                          ? "bg-blue-100 text-blue-800"
+                          : pedido.status === "pronto"
+                          ? "bg-purple-100 text-purple-800"
                           : "bg-gray-100 text-gray-800"
                       }`}
                     >
-                      {pedido.status}
+                      {pedido.status.charAt(0).toUpperCase() +
+                        pedido.status.slice(1)}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-gray-800 align-middle font-semibold">
@@ -149,11 +184,19 @@ export default function PedidosPage() {
                   <td className="px-6 py-4 text-gray-800 align-middle">
                     {pedido.paymentMethod}
                   </td>
+                  <td className="px-6 py-4 text-gray-800 align-middle">
+                    <button
+                      onClick={() => handleDelete(pedido.id)}
+                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium"
+                    >
+                      Cancelar
+                    </button>
+                  </td>
                 </tr>
               ))}
               {pedidos.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                     Nenhum pedido encontrado.
                   </td>
                 </tr>
@@ -195,6 +238,7 @@ export default function PedidosPage() {
               <option value="pendente">Pendente</option>
               <option value="preparando">Preparando</option>
               <option value="pronto">Pronto</option>
+              <option value="concluido">Concluído</option>
             </select>
             {errors.novoStatus && (
               <span className="text-red-600 text-xs ml-2">{errors.novoStatus.message}</span>
