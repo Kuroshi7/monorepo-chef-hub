@@ -7,10 +7,12 @@ import { UsersModule } from './modules/users/users.module';
 import { ProductsModule } from './modules/products/product.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import mikroOrmConfig from '../mikro-orm.config';
+
 
 @Module({
   imports: [
-    MikroOrmModule.forRoot(),
+    MikroOrmModule.forRoot(mikroOrmConfig),
     UsersModule,
     AuthModule,
     ProductsModule,
