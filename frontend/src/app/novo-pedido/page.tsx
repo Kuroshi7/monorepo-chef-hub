@@ -22,6 +22,7 @@ export default function NovoPedidoPage() {
   const [carrinho, setCarrinho] = useState<{ id: number; name: string; price: number; qtd: number }[]>([]);
   const [pagamento, setPagamento] = useState(paymentMethods[0].value);
   const [loading, setLoading] = useState(true);
+  const [aviso, setAviso] = useState<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("jwt");
@@ -38,34 +39,30 @@ export default function NovoPedidoPage() {
   }, []);
 
   const adicionarAoCarrinho = (produto: Produto) => {
+    setAviso(null);
     setCarrinho((prev) => {
       const existente = prev.find((p) => p.id === produto.id);
       if (existente) {
-        return prev.map((p) =>
-          p.id === produto.id ? { ...p, qtd: p.qtd + 1 } : p
-        );
+        setAviso("Só é permitido um item por pedido.");
+        return prev;
       }
       return [...prev, { ...produto, qtd: 1 }];
     });
   };
 
   const removerDoCarrinho = (id: number) => {
-    setCarrinho((prev) =>
-      prev
-        .map((p) => (p.id === id ? { ...p, qtd: p.qtd - 1 } : p))
-        .filter((p) => p.qtd > 0)
-    );
+    setCarrinho((prev) => prev.filter((p) => p.id !== id));
   };
 
   const subtotal = carrinho.reduce(
-    (sum, p) => sum + p.price * p.qtd,
+    (sum, p) => sum + p.price,
     0
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const token = localStorage.getItem("jwt");
-    const productsIds = carrinho.flatMap((p) => Array(p.qtd).fill(p.id));
+    const productsIds = carrinho.map((p) => p.id);
     await fetch("http://localhost:3001/orders", {
       method: "POST",
       headers: {
@@ -85,6 +82,11 @@ export default function NovoPedidoPage() {
     <div className="p-8 max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold mb-6 text-gray-800">Novo Pedido</h1>
       <form onSubmit={handleSubmit} className="space-y-6">
+        {aviso && (
+          <div className="mb-4 p-2 bg-yellow-100 text-yellow-800 rounded border border-yellow-300 text-center font-medium">
+            {aviso}
+          </div>
+        )}
         <div>
           <h2 className="font-semibold mb-2 text-gray-700">Produtos</h2>
           {loading ? (
@@ -118,7 +120,6 @@ export default function NovoPedidoPage() {
               <thead>
                 <tr>
                   <th className="px-2 py-1 text-gray-700">Produto</th>
-                  <th className="px-2 py-1 text-gray-700">Qtd</th>
                   <th className="px-2 py-1 text-gray-700">Subtotal</th>
                   <th className="px-2 py-1"></th>
                 </tr>
@@ -127,9 +128,8 @@ export default function NovoPedidoPage() {
                 {carrinho.map((item) => (
                   <tr key={item.id}>
                     <td className="px-2 py-1 text-gray-800">{item.name}</td>
-                    <td className="px-2 py-1 text-gray-800">{item.qtd}</td>
                     <td className="px-2 py-1 text-gray-800">
-                      R$ {(item.price * item.qtd).toFixed(2)}
+                      R$ {item.price.toFixed(2)}
                     </td>
                     <td className="px-2 py-1">
                       <Button
