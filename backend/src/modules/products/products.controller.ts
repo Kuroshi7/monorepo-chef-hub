@@ -18,6 +18,11 @@ export class ProductsController {
         return this.productsService.findAll();
     }
 
+    @Get(':id')
+    async findOne(@Param('id') id: string) {
+        return this.productsService.FindOne(+id);
+    }
+
     @Patch(':id')
     update(@Param('id') id: string, @Body() updateProductDto: Partial<CreateProductDto>) {
         return this.productsService.update(+id, updateProductDto);

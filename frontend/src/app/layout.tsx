@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { Sidebar } from "@/components/layout/Sidebar";
+import { usePathname } from "next/navigation";
+import AppShell from "@/components/AppShell";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -23,13 +26,28 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const pathname = typeof window !== "undefined" ? window.location.pathname : "";
+  const hideSidebar = pathname === "/login";
+
   return (
-    <html lang="en">
+    <html lang="pt">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}
       >
-        {children}
+        <AppShell>{children}</AppShell>
       </body>
     </html>
+  );
+}
+function LayoutWithSidebar({children}: {children: React.ReactNode}) { 
+const pathname = typeof window !== "undefined" ? window.location.pathname : "";
+  const showSidebar = pathname !== "/login";
+  return showSidebar ? (
+    <div className="flex">
+      <Sidebar />
+      <main className="flex-1 bg-gray-50 min-h-screen p-8">{children}</main>
+    </div>
+  ) : (
+    <>{children}</>
   );
 }
