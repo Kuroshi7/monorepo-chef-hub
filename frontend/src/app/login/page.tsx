@@ -118,7 +118,7 @@ export default function LoginPage() {
         </div>
         {mode === "login" ? (
           <form onSubmit={handleLoginSubmit(onLogin)} className="space-y-5">
-            <h1 className="text-2xl font-bold text-center mb-2 text-blue-900">Bem-vindo!</h1>
+            <h1 className="text-2xl font-bold text-center mb-2 text-blue-900">CHEF HUB!</h1>
             <div>
               <Input
                 type="email"

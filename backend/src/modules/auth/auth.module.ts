@@ -5,9 +5,13 @@ import { UsersModule } from '../users/users.module';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
+import { MikroOrmModule } from '@mikro-orm/nestjs';
+import { User } from 'src/entities/user.entity';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Module({
   imports: [
+    MikroOrmModule.forFeature([User]),
     UsersModule,
     PassportModule,
     JwtModule.register({
@@ -15,7 +19,8 @@ import { JwtStrategy } from './jwt.strategy';
       signOptions: { expiresIn: '12h' },
     }),
   ],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, JwtAuthGuard],
   controllers: [AuthController],
+  exports: [AuthService, JwtAuthGuard],
 })
 export class AuthModule {}
