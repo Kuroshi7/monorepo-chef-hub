@@ -1,6 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 interface Pedido {
   id: number;
@@ -10,13 +13,25 @@ interface Pedido {
   products: { name: string }[];
 }
 
+const statusSchema = z.object({
+  statusId: z
+    .string()
+    .min(1, "ID obrigatório")
+    .refine((val) => /^\d+$/.test(val), { message: "ID deve ser numérico" }),
+    novoStatus: z.string(),
+});
+
+type StatusForm = z.infer<typeof statusSchema>;
+
 export default function PedidosPage() {
   const router = useRouter();
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusId, setStatusId] = useState<number | "">("");
-  const [novoStatus, setNovoStatus] = useState<string>("Pendente");
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
+  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<StatusForm>({
+    resolver: zodResolver(statusSchema),
+    defaultValues: { statusId: "", novoStatus: "pendente" },
+  });
 
   useEffect(() => {
     const token = localStorage.getItem("jwt");
@@ -32,24 +47,23 @@ export default function PedidosPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleStatusUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleStatusUpdate = async (data: { statusId: string; novoStatus: string }) => {
     setStatusMsg(null);
     const token = localStorage.getItem("jwt");
-    if (!statusId || !novoStatus) {
+    if (!data.statusId || !data.novoStatus) {
       setStatusMsg("Preencha todos os campos.");
       return;
     }
     try {
       const res = await fetch(
-        `http://localhost:3001/orders/${statusId}/status`,
+        `http://localhost:3001/orders/${data.statusId}/status`,
         {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ status: novoStatus }),
+          body: JSON.stringify({ status: data.novoStatus }),
         }
       );
       if (!res.ok) throw new Error("Erro ao atualizar status");
@@ -61,6 +75,7 @@ export default function PedidosPage() {
         .then((res) => res.json())
         .then((data) => setPedidos(data))
         .finally(() => setLoading(false));
+      reset();
     } catch {
       setStatusMsg("Falha ao atualizar status.");
     }
@@ -152,7 +167,7 @@ export default function PedidosPage() {
           Atualizar Status do Pedido
         </h2>
         <form
-          onSubmit={handleStatusUpdate}
+          onSubmit={handleSubmit(handleStatusUpdate)}
           className="flex flex-col gap-3 bg-white p-4 rounded shadow border"
         >
           <label className="text-gray-700 font-medium">
@@ -162,27 +177,28 @@ export default function PedidosPage() {
               inputMode="numeric"
               pattern="[0-9]*"
               className="border rounded px-2 py-1 ml-2 w-32 focus:outline-none focus:ring-2 focus:ring-blue-300"
-              value={statusId}
-              onChange={(e) => {
-                const val = e.target.value.replace(/\D/g, "");
-                setStatusId(val === "" ? "" : Number(val));
-              }}
               placeholder="Digite o ID"
               required
+              {...register("statusId")}
             />
+            {errors.statusId && (
+              <span className="text-red-600 text-xs ml-2">{errors.statusId.message}</span>
+            )}
           </label>
           <label className="text-gray-700 font-medium">
             Novo Status
             <select
               className="border rounded px-2 py-1 ml-2"
-              value={novoStatus}
-              onChange={(e) => setNovoStatus(e.target.value)}
               required
+              {...register("novoStatus")}
             >
               <option value="pendente">Pendente</option>
               <option value="preparando">Preparando</option>
               <option value="pronto">Pronto</option>
             </select>
+            {errors.novoStatus && (
+              <span className="text-red-600 text-xs ml-2">{errors.novoStatus.message}</span>
+            )}
           </label>
           <button
             type="submit"

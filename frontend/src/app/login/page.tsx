@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, SubmitHandler } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -15,7 +15,7 @@ const loginSchema = z.object({
 
 const registerSchema = z.object({
   name: z.string().min(2, "Nome obrigatório"),
-  email: z.string().email("Email inválido"),
+  email: z.email("Email inválido"),
   password: z.string().min(6, "Senha deve ter ao menos 6 caracteres"),
 });
 
@@ -27,25 +27,27 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [mode, setMode] = useState<"login" | "register">("login");
 
-  // Login form
+  // login
   const {
     register: loginRegister,
     handleSubmit: handleLoginSubmit,
     formState: { errors: loginErrors, isSubmitting: isLoginSubmitting },
+    reset: resetLogin,
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
 
-  // Register form
+  // cadastro
   const {
     register: registerRegister,
     handleSubmit: handleRegisterSubmit,
     formState: { errors: registerErrors, isSubmitting: isRegisterSubmitting },
+    reset: resetRegister,
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
   });
 
-  async function onLogin(data: LoginFormData) {
+  const onLogin: SubmitHandler<LoginFormData> = async (data) => {
     setError("");
     try {
       const res = await fetch("http://localhost:3001/auth/login", {
@@ -57,12 +59,13 @@ export default function LoginPage() {
       const { token } = await res.json();
       localStorage.setItem("jwt", token);
       router.push("/dashboard");
+      resetLogin();
     } catch (err: any) {
       setError(err.message || "Erro ao logar");
     }
-  }
+  };
 
-  async function onRegister(data: RegisterFormData) {
+  const onRegister: SubmitHandler<RegisterFormData> = async (data) => {
     setError("");
     try {
       const res = await fetch("http://localhost:3001/auth/register", {
@@ -74,10 +77,11 @@ export default function LoginPage() {
       const { token } = await res.json();
       localStorage.setItem("jwt", token);
       router.push("/dashboard");
+      resetRegister();
     } catch (err: any) {
       setError(err.message || "Erro ao cadastrar");
     }
-  }
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-200 via-white to-blue-300">

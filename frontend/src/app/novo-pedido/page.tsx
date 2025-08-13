@@ -2,6 +2,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 interface Produto {
   id: number;
@@ -16,11 +19,21 @@ const paymentMethods = [
   { value: "cartao", label: "Cartão" },
 ];
 
+const novoPedidoSchema = z.object({
+  pagamento: z.string(),
+});
+
+type NovoPedidoForm = z.infer<typeof novoPedidoSchema>;
+
 export default function NovoPedidoPage() {
   const router = useRouter();
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [carrinho, setCarrinho] = useState<{ id: number; name: string; price: number; qtd: number }[]>([]);
-  const [pagamento, setPagamento] = useState(paymentMethods[0].value);
+  const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<NovoPedidoForm>({
+    resolver: zodResolver(novoPedidoSchema),
+    defaultValues: { pagamento: paymentMethods[0].value },
+  });
+  const pagamento = watch("pagamento");
   const [loading, setLoading] = useState(true);
   const [aviso, setAviso] = useState<string | null>(null);
 
@@ -59,8 +72,7 @@ export default function NovoPedidoPage() {
     0
   );
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: { pagamento: string }) => {
     const token = localStorage.getItem("jwt");
     const productsIds = carrinho.map((p) => p.id);
     await fetch("http://localhost:3001/orders", {
@@ -71,17 +83,18 @@ export default function NovoPedidoPage() {
       },
       body: JSON.stringify({
         productsIds,
-        paymentMethod: pagamento,
+        paymentMethod: data.pagamento,
       }),
     });
     setCarrinho([]);
+    reset();
     alert("Pedido realizado com sucesso!");
   };
 
   return (
     <div className="p-8 max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold mb-6 text-gray-800">Novo Pedido</h1>
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {aviso && (
           <div className="mb-4 p-2 bg-yellow-100 text-yellow-800 rounded border border-yellow-300 text-center font-medium">
             {aviso}
@@ -153,8 +166,7 @@ export default function NovoPedidoPage() {
           <h2 className="font-semibold mb-2 text-gray-700">Forma de Pagamento</h2>
           <select
             className="border rounded px-2 py-1 text-gray-800 bg-white"
-            value={pagamento}
-            onChange={(e) => setPagamento(e.target.value)}
+            {...register("pagamento")}
           >
             {paymentMethods.map((pm) => (
               <option key={pm.value} value={pm.value}>
@@ -162,6 +174,9 @@ export default function NovoPedidoPage() {
               </option>
             ))}
           </select>
+          {errors.pagamento && (
+            <span className="text-red-600 text-xs">{errors.pagamento.message}</span>
+          )}
         </div>
         <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
           Finalizar Pedido

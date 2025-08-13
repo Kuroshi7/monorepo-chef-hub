@@ -2,6 +2,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 interface Produto {
   id: number;
@@ -16,15 +19,35 @@ const categorias = [
   { value: "sobremesa", label: "Sobremesa" },
 ];
 
+const produtoSchema = z.object({
+  name: z.string().min(2, "Nome obrigatório"),
+  price: z
+    .string()
+    .refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
+      message: "Preço deve ser um número positivo",
+    }),
+  category: z.string(),
+});
+
+type NovoProdutoForm = z.infer<typeof produtoSchema>;
+
 export default function ProdutosPage() {
   const router = useRouter();
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [loading, setLoading] = useState(true);
   const [busca, setBusca] = useState("");
-  const [novoProduto, setNovoProduto] = useState({
-    name: "",
-    price: "",
-    category: categorias[0].value,
+  const {
+    register: registerNovo,
+    handleSubmit: handleSubmitNovo,
+    reset: resetNovo,
+    formState: { isSubmitting: isSubmittingNovo, errors: errorsNovo },
+  } = useForm<NovoProdutoForm>({
+    resolver: zodResolver(produtoSchema),
+    defaultValues: {
+      name: "",
+      price: "",
+      category: categorias[0].value,
+    },
   });
   const [editandoId, setEditandoId] = useState<number | null>(null);
   const [editProduto, setEditProduto] = useState({
@@ -40,7 +63,6 @@ export default function ProdutosPage() {
       return;
     }
     buscarProdutos();
-
   }, []);
 
   const buscarProdutos = async () => {
@@ -64,8 +86,7 @@ export default function ProdutosPage() {
     setProdutos((prev) => prev.filter((p) => p.id !== id));
   };
 
-  const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAdd = async (data: { name: string; price: string; category: string }) => {
     const token = localStorage.getItem("jwt");
     const res = await fetch("http://localhost:3001/products", {
       method: "POST",
@@ -74,13 +95,13 @@ export default function ProdutosPage() {
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
-        name: novoProduto.name,
-        price: Number(novoProduto.price),
-        category: novoProduto.category,
+        name: data.name,
+        price: Number(data.price),
+        category: data.category,
       }),
     });
     if (res.ok) {
-      setNovoProduto({ name: "", price: "", category: categorias[0].value });
+      resetNovo();
       buscarProdutos();
     }
   };
@@ -122,19 +143,18 @@ export default function ProdutosPage() {
     <div className="p-8">
       <h1 className="text-2xl font-bold mb-6 text-gray-800">Produtos</h1>
       <form
-        onSubmit={handleAdd}
+        onSubmit={handleSubmitNovo(handleAdd)}
         className="mb-6 flex gap-4 items-end flex-wrap bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-sm"
       >
         <div>
           <label className="block text-sm text-gray-700 mb-1">Nome</label>
           <input
             className="border border-gray-300 rounded px-3 py-2 text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-200"
-            value={novoProduto.name}
-            onChange={(e) =>
-              setNovoProduto((v) => ({ ...v, name: e.target.value }))
-            }
-            required
+            {...registerNovo("name")}
           />
+          {errorsNovo.name && (
+            <span className="text-red-600 text-xs">{errorsNovo.name.message}</span>
+          )}
         </div>
         <div>
           <label className="block text-sm text-gray-700 mb-1">Preço</label>
@@ -142,21 +162,17 @@ export default function ProdutosPage() {
             className="border border-gray-300 rounded px-3 py-2 text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-200"
             type="number"
             step="0.01"
-            value={novoProduto.price}
-            onChange={(e) =>
-              setNovoProduto((v) => ({ ...v, price: e.target.value }))
-            }
-            required
+            {...registerNovo("price")}
           />
+          {errorsNovo.price && (
+            <span className="text-red-600 text-xs">{errorsNovo.price.message}</span>
+          )}
         </div>
         <div>
           <label className="block text-sm text-gray-700 mb-1">Categoria</label>
           <select
             className="border border-gray-300 rounded px-3 py-2 text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-200"
-            value={novoProduto.category}
-            onChange={(e) =>
-              setNovoProduto((v) => ({ ...v, category: e.target.value }))
-            }
+            {...registerNovo("category")}
           >
             {categorias.map((cat) => (
               <option key={cat.value} value={cat.value}>
@@ -164,9 +180,12 @@ export default function ProdutosPage() {
               </option>
             ))}
           </select>
+          {errorsNovo.category && (
+            <span className="text-red-600 text-xs">{errorsNovo.category.message}</span>
+          )}
         </div>
-        <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded shadow">
-          Adicionar
+        <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded shadow" disabled={isSubmittingNovo}>
+          {isSubmittingNovo ? "Adicionando..." : "Adicionar"}
         </Button>
       </form>
       <div className="mb-4 flex items-center gap-2">
