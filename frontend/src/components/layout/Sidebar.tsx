@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 
 const menu = [
   { name: "Dashboard", href: "/dashboard" },
@@ -12,6 +13,17 @@ const menu = [
 
 export function Sidebar() {
   const router = useRouter();
+  
+  //verificar se usuario esta logado antes de renderizar item
+  const [isLogged, setIsLogged] = useState(false);
+
+  useEffect(() => {
+    setIsLogged(!!localStorage.getItem("jwt"));
+  }, []);
+
+  if (!isLogged) {
+    return null;
+  }
 
   const handleLogout = async () => {
     try {
